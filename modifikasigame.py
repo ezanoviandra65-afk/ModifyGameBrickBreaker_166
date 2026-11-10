@@ -1,7 +1,7 @@
 import math
 import random
 import tkinter as tk
- 
+
 # ---------------- Pengaturan ----------------
 W, H = 640, 480
 TOP = 36                      # batas atas area bermain (di bawah HUD)
@@ -11,11 +11,11 @@ PADDLE_H = 12
 BALL_R = 8
 TRAIL_LEN = 6
 FONT = 'Forte'
- 
+
 BG = '#0f1226'
 HIT_COLORS = {1: '#ff6b6b', 2: '#4dabf7', 3: '#a78bfa'}
 TRAIL_COLORS = ['#1d2240', '#262d52', '#323b6a', '#42508a', '#5a6cb0', '#7d90d8']
- 
+
 # kode: (warna, teks pop-up)
 POWERUPS = {
     'W': ('#51cf66', 'WIDE PADDLE!'),
@@ -23,8 +23,8 @@ POWERUPS = {
     'S': ('#22d3ee', 'SLOW BALL!'),
     'L': ('#f783ac', 'EXTRA LIFE!'),
 }
- 
- 
+
+
 # ---------------- Objek game ----------------
 class Ball:
     def __init__(self, canvas, x, y, vx=0.0, vy=0.0):
@@ -37,7 +37,7 @@ class Ball:
         self.body = canvas.create_oval(0, 0, 0, 0, fill='white',
                                        outline='', tags='ball')
         self.draw()
- 
+
     def draw(self, with_trail=False):
         c, r = self.canvas, BALL_R
         c.coords(self.glow, self.x - r - 4, self.y - r - 4,
@@ -55,15 +55,15 @@ class Ball:
                 s = r * (i + 1) / (n + 1)
                 c.coords(t, tx - s, ty - s, tx + s, ty + s)
                 c.itemconfig(t, fill=TRAIL_COLORS[i + TRAIL_LEN - n])
- 
+
     def delete(self):
         self.canvas.delete(self.glow)
         self.canvas.delete(self.body)
         for t in self.trail:
             self.canvas.delete(t[0])
         self.trail = []
- 
- 
+
+
 class Paddle:
     def __init__(self, canvas):
         self.canvas = canvas
@@ -73,29 +73,29 @@ class Paddle:
                                           outline='#f59f00', width=2,
                                           tags='paddle')
         self.draw()
- 
+
     @property
     def x1(self):
         return self.x - self.w / 2
- 
+
     @property
     def x2(self):
         return self.x + self.w / 2
- 
+
     def set_x(self, x):
         half = self.w / 2
         self.x = max(half, min(W - half, x))
         self.draw()
- 
+
     def set_width(self, w):
         self.w = w
         self.set_x(self.x)
- 
+
     def draw(self):
         self.canvas.coords(self.id, self.x1, PADDLE_Y,
                            self.x2, PADDLE_Y + PADDLE_H)
- 
- 
+
+
 class Brick:
     def __init__(self, canvas, x1, y1, x2, y2, hits):
         self.canvas = canvas
@@ -109,15 +109,15 @@ class Brick:
         self.shine = canvas.create_rectangle(x1 + 4, y1 + 4, x2 - 4, y1 + 8,
                                              fill='white', outline='',
                                              stipple='gray50', tags='brick')
- 
+
     def recolor(self):
         self.canvas.itemconfig(self.id, fill=HIT_COLORS[self.hits])
- 
+
     def delete(self):
         self.canvas.delete(self.id)
         self.canvas.delete(self.shine)
- 
- 
+
+
 class PowerUp:
     def __init__(self, canvas, x, y, kind):
         self.canvas = canvas
@@ -129,17 +129,17 @@ class PowerUp:
         self.label = canvas.create_text(x, y, text=kind, fill='black',
                                         font=('Arial', 11, 'bold'),
                                         tags='powerup')
- 
+
     def move(self, dy):
         self.y += dy
         self.canvas.move(self.box, 0, dy)
         self.canvas.move(self.label, 0, dy)
- 
+
     def delete(self):
         self.canvas.delete(self.box)
         self.canvas.delete(self.label)
- 
- 
+
+
 # ---------------- Game ----------------
 class Game(tk.Frame):
     def __init__(self, master):
@@ -148,22 +148,22 @@ class Game(tk.Frame):
                                 highlightthickness=0)
         self.canvas.pack()
         self.pack()
- 
+
         self.keys = {'left': False, 'right': False}
         self.best = 0
         self.frame = 0
         self.state = 'ready'
- 
+
         self.draw_background()
         self.canvas.bind('<KeyPress>', self.on_key_down)
         self.canvas.bind('<KeyRelease>', self.on_key_up)
         self.canvas.bind('<Motion>', self.on_motion)
         self.canvas.bind('<Button-1>', self.on_click)
         self.canvas.focus_set()
- 
+
         self.reset_game()
         self.tick()
- 
+
     # ----- tampilan statis -----
     def draw_background(self):
         for _ in range(70):
@@ -174,12 +174,12 @@ class Game(tk.Frame):
                                     outline='', tags='bg')
         self.canvas.create_line(0, TOP, W, TOP, fill='#323b6a', width=2,
                                 tags='bg')
- 
+
     def text(self, x, y, txt, size=30, fill='white', tag='msg', anchor='center'):
         return self.canvas.create_text(x, y, text=txt, fill=fill,
                                        font=(FONT, size), tags=tag,
                                        anchor=anchor)
- 
+
     # ----- mulai / reset -----
     def reset_game(self):
         for tag in ('brick', 'ball', 'trail', 'paddle', 'powerup',
@@ -200,7 +200,7 @@ class Game(tk.Frame):
         self.build_ui()
         self.build_level()
         self.enter_ready()
- 
+
     def build_ui(self):
         self.lives_txt = self.text(12, TOP / 2, '', 15, tag='ui', anchor='w')
         self.level_txt = self.text(W / 2, TOP / 2, '', 15, tag='ui')
@@ -209,14 +209,14 @@ class Game(tk.Frame):
         self.status_txt = self.text(W / 2, H - 14, '', 11, fill='#8fa0cc',
                                     tag='status')
         self.update_hud()
- 
+
     def update_hud(self):
         self.canvas.itemconfig(self.lives_txt, text='Lives: %d' % self.lives)
         combo = '   x%d' % self.combo if self.combo > 1 else ''
         self.canvas.itemconfig(self.level_txt,
                                text='Level %d%s' % (self.level, combo))
         self.canvas.itemconfig(self.score_txt, text='Score: %d' % self.score)
- 
+
     def layout(self, level):
         """Pola bata per level: daftar (baris, kolom, jumlah_pukulan)."""
         cells = []
@@ -241,7 +241,7 @@ class Game(tk.Frame):
                     cells.append((r, c, hits[r]))
         extra = (level - 1) // 4
         return [(r, c, min(3, h + extra)) for r, c, h in cells]
- 
+
     def build_level(self):
         for b in self.bricks:
             b.delete()
@@ -251,7 +251,7 @@ class Game(tk.Frame):
             y1 = 70 + r * 26
             self.bricks.append(Brick(self.canvas, x1, y1, x1 + 70, y1 + 22,
                                      hits))
- 
+
     def enter_ready(self):
         self.state = 'ready'
         self.combo = 1
@@ -271,7 +271,7 @@ class Game(tk.Frame):
         self.text(W / 2, 345, 'Space / klik untuk meluncurkan', 16,
                   fill='#8fa0cc')
         self.update_hud()
- 
+
     def launch(self):
         if self.state != 'ready':
             return
@@ -282,7 +282,7 @@ class Game(tk.Frame):
         ball.vx = speed * math.sin(angle)
         ball.vy = -speed * math.cos(angle)
         self.state = 'playing'
- 
+
     # ----- input -----
     def on_key_down(self, e):
         k = e.keysym.lower()
@@ -296,22 +296,22 @@ class Game(tk.Frame):
             self.toggle_pause()
         elif k == 'r':
             self.reset_game()
- 
+
     def on_key_up(self, e):
         k = e.keysym.lower()
         if k in ('left', 'a'):
             self.keys['left'] = False
         elif k in ('right', 'd'):
             self.keys['right'] = False
- 
+
     def on_motion(self, e):
         if self.state in ('ready', 'playing'):
             self.paddle.set_x(e.x)
- 
+
     def on_click(self, e):
         self.canvas.focus_set()
         self.launch()
- 
+
     def toggle_pause(self):
         if self.state == 'playing':
             self.state = 'paused'
@@ -321,14 +321,14 @@ class Game(tk.Frame):
         elif self.state == 'paused':
             self.state = 'playing'
             self.canvas.delete('pause')
- 
+
     # ----- fisika -----
     def current_speed(self):
         base = min(5.0 + 0.6 * (self.level - 1), 9.5)
         if self.frame < self.slow_until:
             base *= 0.65
         return base
- 
+
     def normalize(self, b, target):
         sp = math.hypot(b.vx, b.vy) or 1.0
         k = target / sp
@@ -339,7 +339,7 @@ class Game(tk.Frame):
             b.vy = math.copysign(min_vy, b.vy if b.vy else -1)
             b.vx = math.copysign(math.sqrt(max(target ** 2 - b.vy ** 2, 0)),
                                  b.vx if b.vx else 1)
- 
+
     def collide_walls(self, b):
         r = BALL_R
         if b.x - r <= 0:
@@ -351,7 +351,7 @@ class Game(tk.Frame):
         if b.y - r <= TOP:
             b.y = TOP + r
             b.vy = abs(b.vy)
- 
+
     def collide_paddle(self, b, target):
         r, p = BALL_R, self.paddle
         if (b.vy > 0 and b.y + r >= PADDLE_Y
@@ -365,7 +365,7 @@ class Game(tk.Frame):
             if self.combo != 1:
                 self.combo = 1
                 self.update_hud()
- 
+
     def collide_bricks(self, b):
         r = BALL_R
         for br in self.bricks:
@@ -390,7 +390,7 @@ class Game(tk.Frame):
                     b.vy = abs(b.vy)
                 self.hit_brick(br)
                 break
- 
+
     def hit_brick(self, br):
         br.hits -= 1
         if br.hits <= 0:
@@ -409,7 +409,7 @@ class Game(tk.Frame):
             br.recolor()
         self.combo = min(self.combo + 1, 8)
         self.update_hud()
- 
+
     # ----- efek -----
     def spawn_particles(self, x, y, color):
         for _ in range(10):
@@ -420,12 +420,12 @@ class Game(tk.Frame):
                                                tags='particle')
             self.particles.append([pid, x, y, math.cos(ang) * sp,
                                    math.sin(ang) * sp - 1, 28])
- 
+
     def popup(self, txt, color):
         pid = self.text(self.paddle.x, PADDLE_Y - 30, txt, 16, fill=color,
                         tag='popup')
         self.popups.append([pid, 45])
- 
+
     def update_effects(self):
         for p in self.particles[:]:
             p[1] += p[3]
@@ -443,7 +443,7 @@ class Game(tk.Frame):
             if p[1] <= 0:
                 self.canvas.delete(p[0])
                 self.popups.remove(p)
- 
+
     def update_status(self):
         parts = []
         if self.frame < self.wide_until:
@@ -451,7 +451,7 @@ class Game(tk.Frame):
         if self.frame < self.slow_until:
             parts.append('SLOW %ds' % math.ceil((self.slow_until - self.frame) / 60))
         self.canvas.itemconfig(self.status_txt, text='    '.join(parts))
- 
+
     # ----- power-up -----
     def apply_powerup(self, kind):
         color, label = POWERUPS[kind]
@@ -473,7 +473,7 @@ class Game(tk.Frame):
             self.lives = min(self.lives + 1, 5)
         self.popup(label, color)
         self.update_hud()
- 
+
     def update_powerups(self):
         p = self.paddle
         for pu in self.powerups[:]:
@@ -486,26 +486,26 @@ class Game(tk.Frame):
             elif pu.y > H + 20:
                 pu.delete()
                 self.powerups.remove(pu)
- 
+
     # ----- alur game -----
     def move_paddle_keys(self):
         dx = (self.keys['right'] - self.keys['left']) * 9
         if dx:
             self.paddle.set_x(self.paddle.x + dx)
- 
+
     def update_ready(self):
         self.move_paddle_keys()
         b = self.balls[0]
         b.x = self.paddle.x
         b.y = PADDLE_Y - BALL_R
         b.draw()
- 
+
     def update_playing(self):
         self.move_paddle_keys()
         if self.wide_until and self.frame >= self.wide_until:
             self.wide_until = 0
             self.paddle.set_width(PADDLE_W)
- 
+
         target = self.current_speed()
         for b in self.balls[:]:
             b.x += b.vx
@@ -518,14 +518,14 @@ class Game(tk.Frame):
             if b.y - BALL_R > H:
                 b.delete()
                 self.balls.remove(b)
- 
+
         self.update_powerups()
- 
+
         if not self.balls:
             self.lose_life()
         elif not self.bricks:
             self.level_clear()
- 
+
     def lose_life(self):
         self.lives -= 1
         self.combo = 1
@@ -534,7 +534,7 @@ class Game(tk.Frame):
             self.game_over()
         else:
             self.enter_ready()
- 
+
     def level_clear(self):
         self.state = 'levelup'
         bonus = 100 * self.level
@@ -549,7 +549,7 @@ class Game(tk.Frame):
         self.text(W / 2, 250, 'Level Clear!', 44)
         self.text(W / 2, 300, 'Bonus +%d' % bonus, 22, fill='#ffd43b')
         self.levelup_until = self.frame + 100
- 
+
     def game_over(self):
         self.state = 'over'
         self.best = max(self.best, self.score)
@@ -558,7 +558,7 @@ class Game(tk.Frame):
         self.text(W / 2, 275, 'Score: %d    Best: %d' % (self.score, self.best),
                   22)
         self.text(W / 2, 320, 'Tekan R untuk main lagi', 16, fill='#8fa0cc')
- 
+
     def tick(self):
         self.frame += 1
         if self.state == 'ready':
@@ -574,8 +574,8 @@ class Game(tk.Frame):
             self.update_effects()
             self.update_status()
         self.after(16, self.tick)
- 
- 
+
+
 if __name__ == '__main__':
     root = tk.Tk()
     root.title('Brick Breaker')
